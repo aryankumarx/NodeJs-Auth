@@ -1,70 +1,105 @@
 const Image = require('../models/image');
 const uploadToCloudinary = require('../helpers/cloudinary-helper');
 const fs = require('fs');
+// FIXED: Removed .v2 because your config file already exports it
+const cloudinary = require('../config/cloudinary'); 
 
-const uploadImage = async(req,res)=>{
-   try{
+const uploadImage = async(req, res) => {
+    try {
+        // Check if file is missing in req object
+        if (!req.file) {
+            return res.status(400).json({
+                success: false, // Fixed typo: 'sucess' -> 'success'
+                message: 'File is required. Please upload an Image'
+            });
+        }
 
-      //check if file is missing in req object
-      if(!req.file){
-         return res.status(400).json({
-            sucess: false,
-            message: 'File is required. Please upload an Image'
-         })
-      }
-      
-      //upload to cloudinary
-      const { url, publicId } = await uploadToCloudinary(req.file.path);
+        // Upload to cloudinary
+        const { url, publicId } = await uploadToCloudinary(req.file.path);
 
-      //store the image url and publicId along with the uploaded userId in db
-      const newlyUploadedImage = new Image({
-         url,
-         publicId,
-         uploadedBy: req.user.userId
+        // Store the image url and publicId along with the uploaded userId in db
+        const newlyUploadedImage = new Image({
+            url,
+            publicId,
+            uploadedBy: req.user.userId
+        });
 
-      })
+        await newlyUploadedImage.save();
 
-      await newlyUploadedImage.save();
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
 
-      // delete the file from local storage 'uploadFolder'
-      // fs.unlinkSync(req.file.path);       // <-- only admin can delete files
+        res.status(201).json({
+            success: true,
+            message: 'Image Uploaded!',
+            image: newlyUploadedImage
+        });
 
-      res.status(201).json({
-         sucess: true,
-         message: 'Image Uploaded!',
-         image: newlyUploadedImage
-      })
-
-   }catch(error){
-      console.error(error);
-      res.status(500).json({
-         sucess: false,
-         message: 'Something went wrong! Please try again'
-      })
-   }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Something went wrong! Please try again'
+        });
+    }
 };
 
-const fetchImages = async(req,res)=>{
-   try{
-      const images = await Image.find({ uploadedBy: req.user.userId });
+const fetchImages = async(req, res) => {
+    try {
+        const images = await Image.find({ uploadedBy: req.user.userId });
 
-      if(images){
-         res.status(200).json({
-            sucess: true,
+        res.status(200).json({
+            success: true,
             data: images
-         })
-      }
-   }catch(error){
-      console.error(error);
-      res.status(500).json({
-         sucess: false,
-         message: 'Something went wrong! Please try again'
-      })
-   }
+        });
+        
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Something went wrong! Please try again'
+        });
+    }
 };
 
+const deleteImage = async(req, res) => {
+    try {
+        const getCurrentImageToDeleted = req.params.id;
+
+        const image = await Image.findById(getCurrentImageToDeleted);
+
+        if (!image) {
+            return res.status(404).json({
+                success: false,
+                message: 'Image not found'
+            });
+        }
+
+        // Delete image from cloudinary
+        if (image.publicId) {
+            await cloudinary.uploader.destroy(image.publicId);
+        }
+
+        // Delete image from mongo db
+        await Image.findByIdAndDelete(getCurrentImageToDeleted);
+
+        res.status(200).json({
+            success: true,
+            message: 'Image deleted successfully'
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Something went wrong! Please try again'
+        });
+    }
+};
 
 module.exports = {
-   uploadImage,
-   fetchImages
-}
+    uploadImage,
+    fetchImages,
+    deleteImage
+};
