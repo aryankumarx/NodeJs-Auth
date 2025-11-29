@@ -1,3 +1,47 @@
+# Node.js Authentication & File Upload System
+
+A robust backend application demonstrating **Role-Based Access Control (RBAC)** and **Secure File Uploads** using Node.js, Express, MongoDB, and Cloudinary.
+
+## 🚀 Features
+
+### 1. Authentication & Security
+* **User Registration & Login:** Secure authentication using JWT (JSON Web Tokens).
+* **Password Hashing:** Passwords are hashed using `bcryptjs` before storage.
+* **Role-Based Access Control (RBAC):**
+    * `User`: Can access public and protected home routes.
+    * `Admin`: Exclusive access to admin dashboards.
+* **Protected Routes:** Middleware to verify tokens and roles.
+
+### 2. File Upload System
+* **Image Upload:** Users can upload images via `Multer`.
+* **Cloud Storage:** Images are automatically uploaded to **Cloudinary** for scalable storage.
+* **Database Linking:** Image URLs and Public IDs are stored in MongoDB linked to the uploading user.
+* **Local Cleanup:** Temporary server files are deleted automatically after successful cloud upload.
+
+## 🛠️ Tech Stack
+* **Runtime:** Node.js
+* **Framework:** Express.js
+* **Database:** MongoDB (Mongoose)
+* **Authentication:** JWT, Bcryptjs
+* **File Handling:** Multer, Cloudinary
+
+## ⚙️ Environment Variables
+
+Create a `.env` file in the root directory and add the following:
+
+```env
+PORT=3000
+MONGO_URL=your_mongodb_connection_string
+JWT_SECRET_KEY=your_jwt_secret_key
+
+# Cloudinary Credentials
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+
+
 ## 🔌 API Endpoints
 
 ### 🔐 Authentication
